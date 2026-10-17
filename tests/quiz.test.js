@@ -9,6 +9,7 @@ const {
   isQuizFinished,
   shuffle,
   isCorrect,
+  isNewBestScore,
   calculatePercentage,
   formatTimeLeft,
   getGrade,
@@ -91,6 +92,22 @@ test("isCorrect returns true for the right answer", () => {
 
 test("isCorrect returns false for a wrong answer", () => {
   assert.equal(isCorrect({ answer: 2 }, 0), false);
+});
+
+test("isNewBestScore returns true when there is no previous best", () => {
+  assert.equal(isNewBestScore(0, null), true);
+});
+
+test("isNewBestScore returns true for a score above the previous best", () => {
+  assert.equal(isNewBestScore(8, 7), true);
+});
+
+test("isNewBestScore returns false for a score equal to the previous best", () => {
+  assert.equal(isNewBestScore(7, 7), false);
+});
+
+test("isNewBestScore returns false for a score below the previous best", () => {
+  assert.equal(isNewBestScore(6, 7), false);
 });
 
 test("calculatePercentage rounds to a whole number", () => {

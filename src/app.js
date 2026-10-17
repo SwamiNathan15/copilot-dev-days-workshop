@@ -2,9 +2,38 @@
 
 let state = createQuiz([]);
 const QUESTION_TIME_LIMIT = 15;
+const BEST_SCORE_KEY = "dev-days-quiz-best-score";
 let timerInterval;
 let timeLeft = QUESTION_TIME_LIMIT;
 let questionComplete = false;
+
+function loadBestScore() {
+  try {
+    const storedScore = localStorage.getItem(BEST_SCORE_KEY);
+    if (storedScore === null) return null;
+    const score = Number(storedScore);
+    if (!Number.isInteger(score) || score < 0) {
+      console.warn("Ignoring an invalid saved best score.");
+      return null;
+    }
+    return score;
+  } catch (error) {
+    console.warn("Unable to read the saved best score.", error);
+    return null;
+  }
+}
+
+function saveBestScore(score) {
+  try {
+    localStorage.setItem(BEST_SCORE_KEY, String(score));
+    return true;
+  } catch (error) {
+    console.warn("Unable to save the best score.", error);
+    return false;
+  }
+}
+
+let bestScore = loadBestScore();
 
 const startScreen = document.getElementById("start-screen");
 const quizScreen = document.getElementById("quiz-screen");
@@ -18,6 +47,7 @@ const nextButton = document.getElementById("next-btn");
 const scoreText = document.getElementById("score-text");
 const gradeText = document.getElementById("grade-text");
 const resultFeedbackText = document.getElementById("feedback-message");
+const bestScoreText = document.getElementById("best-score-text");
 
 function showScreen(screenToShow) {
   [startScreen, quizScreen, resultScreen].forEach((screen) => {
@@ -113,6 +143,14 @@ function showResults() {
   const total = state.questions.length;
   const percentage = calculatePercentage(state.score, total);
   const grade = getGrade(percentage);
+  if (isNewBestScore(state.score, bestScore)) {
+    bestScore = state.score;
+    const saved = saveBestScore(bestScore);
+    const note = saved ? " (new best!)" : " (this session)";
+    bestScoreText.textContent = `Best score: ${bestScore} out of ${total}${note}`;
+  } else {
+    bestScoreText.textContent = `Best score: ${bestScore} out of ${total}`;
+  }
   scoreText.textContent = `You scored ${state.score} out of ${total} (${percentage}%)`;
   gradeText.textContent = `Grade: ${grade}`;
   resultFeedbackText.textContent = getFeedbackMessage(grade);
