@@ -1,6 +1,6 @@
 // UI code: connects the quiz logic (quiz.js) to the page (index.html).
 
-const state = { questions: [], current: 0, score: 0 };
+let state = createQuiz([]);
 const QUESTION_TIME_LIMIT = 15;
 let timerInterval;
 let timeLeft = QUESTION_TIME_LIMIT;
@@ -17,6 +17,7 @@ const feedbackText = document.getElementById("feedback");
 const nextButton = document.getElementById("next-btn");
 const scoreText = document.getElementById("score-text");
 const gradeText = document.getElementById("grade-text");
+const resultFeedbackText = document.getElementById("feedback-message");
 
 function showScreen(screenToShow) {
   [startScreen, quizScreen, resultScreen].forEach((screen) => {
@@ -26,9 +27,7 @@ function showScreen(screenToShow) {
 
 function startQuiz() {
   clearInterval(timerInterval);
-  state.questions = shuffle(QUESTIONS);
-  state.current = 0;
-  state.score = 0;
+  state = createQuiz(shuffle(QUESTIONS));
   showScreen(quizScreen);
   renderQuestion();
 }
@@ -78,14 +77,17 @@ function completeQuestion(selectedIndex, timedOut, selectedButton) {
   if (timedOut) {
     buttons[question.answer].classList.add("correct");
     feedbackText.textContent = "Time's up!";
-  } else if (isCorrect(question, selectedIndex)) {
-    state.score++;
-    selectedButton.classList.add("correct");
-    feedbackText.textContent = "Correct!";
   } else {
-    selectedButton.classList.add("wrong");
-    buttons[question.answer].classList.add("correct");
-    feedbackText.textContent = "Not quite. The correct answer is highlighted.";
+    const result = answerQuestion(state, selectedIndex);
+    state = result.state;
+    if (result.correct) {
+      selectedButton.classList.add("correct");
+      feedbackText.textContent = "Correct!";
+    } else {
+      selectedButton.classList.add("wrong");
+      buttons[question.answer].classList.add("correct");
+      feedbackText.textContent = "Not quite. The correct answer is highlighted.";
+    }
   }
 
   nextButton.hidden = false;
@@ -99,8 +101,8 @@ function updateTimerDisplay() {
 
 function nextQuestion() {
   clearInterval(timerInterval);
-  state.current++;
-  if (state.current < state.questions.length) {
+  state = advanceQuiz(state);
+  if (!isQuizFinished(state)) {
     renderQuestion();
   } else {
     showResults();
@@ -110,8 +112,10 @@ function nextQuestion() {
 function showResults() {
   const total = state.questions.length;
   const percentage = calculatePercentage(state.score, total);
+  const grade = getGrade(percentage);
   scoreText.textContent = `You scored ${state.score} out of ${total} (${percentage}%)`;
-  gradeText.textContent = `Grade: ${getGrade(percentage)}`;
+  gradeText.textContent = `Grade: ${grade}`;
+  resultFeedbackText.textContent = getFeedbackMessage(grade);
   showScreen(resultScreen);
 }
 
